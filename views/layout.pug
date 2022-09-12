@@ -1,7 +1,31 @@
 doctype html
 html
   head
+    meta(http-equiv="Content-Type" content="text/html;charset=UTF-8")
+    meta(name="viewport" content="width=device-width, initial-scale=1.0")
     title= title
-    link(rel='stylesheet', href='/stylesheets/style.css')
+    link(rel="stylesheet" href="/css/bootstrap.min.css")
+    link(rel='stylesheet' href='/css/style.css')
   body
-    block content
+    nav.navbar.navbar-light.bg-light
+      a(class='navbar-brand' href="#")=title
+      form.form-inline   
+        button(id='network' type='button' class='form-control mr-sm-2 btn btn-secondary') network
+        button(id='address' type='button' class='form-control mr-sm-2 btn btn-light') connect
+        button(id='balance' type='button' class='form-control mr-sm-2 btn btn-light') 0
+        //- button(type='button' class='form-control mr-sm-2 btn btn-light')
+        //-   svg(svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="sc-12ipqmu-0 mbxPt")
+        //-     path(d="M12 13C12.5523 13 13 12.5523 13 12C13 11.4477 12.5523 11 12 11C11.4477 11 11 11.4477 11 12C11 12.5523 11.4477 13 12 13Z" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
+        //-     path(d="M19 13C19.5523 13 20 12.5523 20 12C20 11.4477 19.5523 11 19 11C18.4477 11 18 11.4477 18 12C18 12.5523 18.4477 13 19 13Z" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
+        //-     path(d="M5 13C5.55228 13 6 12.5523 6 12C6 11.4477 5.55228 11 5 11C4.44772 11 4 11.4477 4 12C4 12.5523 4.44772 13 5 13Z" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
+    .container
+      .row
+        .col-md-12
+          block nav
+      block content
+  script(src="/js/jquery-3.6.1.min.js")
+  script(src="/js/bootstrap.min.js")
+  script(script src="https://cdn.ethers.io/lib/ethers-5.2.umd.min.js"
+    charset="utf-8"
+    type="text/javascript") 
+  script(src="/js/common.js") 

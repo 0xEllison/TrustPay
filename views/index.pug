@@ -1,5 +1,26 @@
 extends layout
-
+block nav
+  ul#nav-main.nav.justify-content-center.nav-pills
+            li.nav-item
+              a(class='nav-link active' href='#') Receive
+            li.nav-item
+              a(class='nav-link' href='/pay') Pay
+            li.nav-item
+              a(class='nav-link' href='#') Setting
 block content
-  h1= title
-  p Welcome to #{title}
+  .row
+    .col-md-6.offset-3 
+      form#form-receive.form(method="POST")
+        .form-group
+          label(for="amount") Token Amount
+          input#trade_id(type="hidden" name="trade_id")
+          input#creator(type="hidden" name="creator")
+          input#amount.form-control(type="number" name="amount")
+        .form-group 
+          label(for="remark") Remark
+          input#remark.form-control(type="text" name="remark")
+        button#btnSubmit.btn.btn-primary(type="button" onclick="addTrade()") Submit
+        button#btnSubmit.btn.btn-default(type="button" onclick="getHistory()") History
+  .row
+    .col-md-6.offset-3 
+      

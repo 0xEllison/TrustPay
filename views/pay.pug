@@ -1,0 +1,28 @@
+extends layout
+
+block nav
+  ul#nav-main.nav.justify-content-center.nav-pills
+            li.nav-item
+              a(class='nav-link' href='/') Receive
+            li.nav-item
+              a(class='nav-link active' href='#') Pay
+            li.nav-item
+              a(class='nav-link' href='#') setting
+block content
+  .row
+    .col-md-6.offset-3 
+      form.form
+        .form-group
+          label(for="trade_id") Trade No.
+            .input-group
+                input#trade_id.form-control(type="number")
+                .input-group-append
+                    button#btn-get.btn.btn-primary Get
+        .form-group 
+          label(for="amount") Amount
+          input#amount.form-control(type="text" readonly)
+        .form-group 
+          label(for="receiver") Receiver
+          input#receiver.form-control(type="text" readonly)
+        button.btn.btn-primary(type="submit") Get
+
