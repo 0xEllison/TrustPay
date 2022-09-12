@@ -2,14 +2,15 @@ extends layout
 block nav
   ul#nav-main.nav.justify-content-center.nav-pills
             li.nav-item
-              a(class='nav-link active' href='#') Receive
+              a(class='nav-link active' href='#') Create
             li.nav-item
               a(class='nav-link' href='/pay') Pay
             li.nav-item
               a(class='nav-link' href='#') Setting
 block content
   .row
-    .col-md-6.offset-3 
+    .col-md-12
+      h4.card-title Create
       form#form-receive.form(method="POST")
         .form-group
           label(for="amount") Token Amount
@@ -20,7 +21,22 @@ block content
           label(for="remark") Remark
           input#remark.form-control(type="text" name="remark")
         button#btnSubmit.btn.btn-primary(type="button" onclick="addTrade()") Submit
-        button#btnSubmit.btn.btn-default(type="button" onclick="getHistory()") History
+        button#btnSubmit.btn.btn-light(type="button" onclick="getHistory()") History
   .row
     .col-md-6.offset-3 
-      
+block list
+  .row
+    .col-md-12
+      h4.card-title List
+      table.table.table-hover
+        thead
+          tr 
+            td ID 
+            td Creator 
+            td Payer 
+            td Amount
+            td Status
+            td Option
+        tbody#historyList
+
+

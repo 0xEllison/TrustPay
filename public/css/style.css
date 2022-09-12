@@ -1,0 +1,14 @@
+html {
+  font-family: Manrope, Poppins, Inter, PingFangSC-Regular, "Microsoft YaHei", sans-serif;
+}
+nav{
+  margin-bottom: 20px;
+}
+nav .btn {
+  border-radius: 8px;
+  min-height: 24px;
+  font-weight: 500;
+}
+#nav-main{
+  margin-bottom: 20px;
+}
