@@ -10,11 +10,11 @@ async function getAccount(accounts) {
     account_mask = mask(account);
     $("#address").text(account_mask);
     //获取链上ETH余额
-    this.provider.getBalance(account).then((balance) => {
-        // 余额是 BigNumber (in wei); 格式化为 ether 字符串
-        let etherString = parseFloat(ethers.utils.formatEther(balance)).toFixed(4);
-        $("#balance").text(etherString + " ETH");
-    });
+    // this.provider.getBalance(account).then((balance) => {
+    //     // 余额是 BigNumber (in wei); 格式化为 ether 字符串
+    //     let etherString = parseFloat(ethers.utils.formatEther(balance)).toFixed(4);
+    //     $("#balance").text(etherString + " ETH");
+    // });
     //获取网络信息
     this.provider.getNetwork().then((network) => {
         var networkName = "";
@@ -28,6 +28,7 @@ async function getAccount(accounts) {
     });
     //获取ESB余额
     getBalance();
+    getHistory();
 }
 getAccount();
 ethereum.on('accountsChanged', (accounts) => {
@@ -70,13 +71,12 @@ function listenTradeStatusChange(contract_smartpay, account_address) {
             "status": status
         };
         updateTrade(trade, (status) => {
-            console.log(`your trade ${id} status change to ${status}`);
-            alert(`Trade ${id} update status ${status}`);
+            getHistory();
         });
     });
 }
 function listenTokenTransferChange(contract_token) {
-    let filter = contract_token.filters.Transfer(null, account);
+    let filter = contract_token.filters.Transfer(account, null);
     contract_token.once(filter, (from, to, amount) => {
         console.log(`from ${from} to ${to}=> ${amount} ESB`);
     });
@@ -98,7 +98,7 @@ async function getBalance() {
         const contract_token = new ethers.Contract(address_token, abiERC20, signer);
         let balance_erc20 = await contract_token.balanceOf(account);
         let etherString = ethers.utils.formatUnits(ethers.BigNumber.from(balance_erc20), 6);
-        console.log("your ESB balance:" + etherString);
+        $("#balance").text(etherString + " ESB");
     } catch (error) {
         console.log(error);
     }
@@ -108,19 +108,20 @@ async function updateTrade(trade, callback) {
         try {
             let trades = JSON.parse(localStorage.getItem(account) ?? "[]");
             let _trade;
-            for (let i = 0; i < trades.length; i++) {
+            let i;
+            for (i = 0; i < trades.length; i++) {
                 const _item = trades[i];
-                if (_item.id == trade.id) {
+                if (_item.id.toString() == trade.id.toString()) {
                     _trade = _item;
                     break;
                 }
             }
-            if (_trade && _trade.status != trade.status) {
-                trades[i] = trade;
-            } else if (typeof _trade == "undefined") {
-                trades.unshift(trade);
+
+            if (_trade) {
+                trades[i].status = trade.status;
+                trades[i].payer = trade.payer;
             } else {
-                return;
+                trades.unshift(trade);
             }
             localStorage.setItem(account, JSON.stringify(trades));
             callback(trade.status);
@@ -164,11 +165,106 @@ function getHistory() {
                 break;
         }
         let amountString = ethers.utils.formatUnits(ethers.BigNumber.from(trade.amount), 6);
-        $("#historyList").append(`<tr><td>${trade.id}</td>
+        let htmlList = `<tr><td><a href="#" onclick='updateTradeStatus(${trade.id})'>${trade.id}</a></td>
         <td>${mask(trade.creator)}</td>
         <td>${mask(trade.payer)}</td>
         <td>${amountString}</td>
-        <td>${statusHTML}</td>
-        <td><a href='#' onclick='withdraw(${trade.id})'>withdraw</a></td></tr>`);
+        <td>${statusHTML}</td>`;
+        if (trade.creator.toString().toLowerCase() == account.toString().toLowerCase() && trade.status == 2) {
+            htmlList += `<td><a href='#' onclick='Withdraw(${trade.id})'>Withdraw</a></td></tr>`;
+        } else if (trade.payer.toString().toLowerCase() == account.toString().toLowerCase() && trade.status == 2) {
+            htmlList += `<td><a href='#' onclick='getVerifyCode(${trade.id})'>VerifyCode</a></td></tr>`;
+        } else if (trade.creator.toString().toLowerCase() != account.toString().toLowerCase() && trade.status == 1) {
+            htmlList += `<td><a href='#' onclick='Pay(${trade.id},${trade.amount})'>Pay</a></td></tr>`;
+        } else {
+            htmlList += `<td></td></tr>`;
+        }
+        $("#historyList").append(htmlList);
+    }
+}
+
+async function getTrade() {
+    try {
+        const signer = this.provider.getSigner();
+        const contract_smartpay = new ethers.Contract(address_trustpay, abiTrustpay, signer);
+        let result = await contract_smartpay.getTrade($("#trade_id").val());
+        let trade = {};
+        trade.id = $("#trade_id").val();
+        trade.creator = result[0];
+        trade.payer = result[1];
+        trade.amount = ethers.BigNumber.from(result[2]).toString();
+        trade.status = result[3];
+        if (trade.status != 1) {
+            window.confirm("this trade is not pending");
+            return;
+        }
+        updateTrade(trade, (status) => {
+            getHistory();
+            $("#amount").val(ethers.utils.formatUnits(ethers.BigNumber.from(trade.amount), 6));
+            $("#receiver").val(trade.creator);
+        });
+    } catch (error) {
+        console.log(error);
+    }
+}
+async function Pay(trade_id, amount) {
+    try {
+        const signer = this.provider.getSigner();
+        const contract_token = new ethers.Contract(address_token, abiERC20, signer);
+        const contract_smartpay = new ethers.Contract(address_trustpay, abiTrustpay, signer);
+
+        let isApprove = await contract_token.approve(address_trustpay, amount);
+        if (isApprove) {
+
+            contract_smartpay.executeTrade(trade_id);
+            getBalance();
+            listenTokenTransferChange(contract_token);
+            listenTradeStatusChange(contract_smartpay, account);
+        }
+    } catch (error) {
+        console.log(error);
+    }
+}
+function Withdraw(trade_id) {
+    try {
+        var verifyCode = prompt("VerifyCode");
+        if (verifyCode) {
+
+            const signer = this.provider.getSigner();
+            const contract_token = new ethers.Contract(address_token, abiERC20, signer);
+            const contract_smartpay = new ethers.Contract(address_trustpay, abiTrustpay, signer);
+            contract_smartpay.withdrawTrade(trade_id, verifyCode);
+            getBalance();
+            listenTradeStatusChange(contract_smartpay, account);
+            listenTokenTransferChange(contract_token);
+        }
+    } catch (error) {
+        console.log(error);
+    }
+}
+async function getVerifyCode(trade_id) {
+
+    const signer = this.provider.getSigner();
+    const contract_smartpay = new ethers.Contract(address_trustpay, abiTrustpay, signer);
+    var result = await contract_smartpay.getVerify(trade_id);
+    window.confirm(result);
+}
+async function updateTradeStatus(trade_id) {
+    try {
+        const signer = this.provider.getSigner();
+        const contract_smartpay = new ethers.Contract(address_trustpay, abiTrustpay, signer);
+        let result = await contract_smartpay.getTrade(trade_id);
+
+        let trade = {
+            "id": trade_id,
+            "payer": result[1],
+            "status": result[3]
+        };
+        console.log(trade);
+        updateTrade(trade, (status) => {
+            getHistory();
+        });
+    } catch (error) {
+
     }
 }
