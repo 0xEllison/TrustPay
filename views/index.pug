@@ -1,32 +1,22 @@
 extends layout
 block nav
   ul#nav-main.nav.justify-content-center.nav-pills
-            li.nav-item
-              a(class='nav-link active' href='#') Create
-            li.nav-item
-              a(class='nav-link' href='/pay') Pay
-            li.nav-item
-              a(class='nav-link' href='#') Setting
+    li.nav-item
+      a.nav-link.active(href='#') Create
+    li.nav-item
+      a.nav-link(href='/history') History
 block content
   .row
-    .col-md-12
+    .col-md-6.offset-3
       h4.card-title Create
-      form#form-receive.form(method="POST")
+      form#form-receive.form-inline
         .form-group
-          label(for="amount") Token Amount
-          input#trade_id(type="hidden" name="trade_id")
-          input#creator(type="hidden" name="creator")
-          input#amount.form-control(type="number" name="amount")
-        .form-group 
-          label(for="remark") Remark
-          input#remark.form-control(type="text" name="remark")
-        button#btnSubmit.btn.btn-primary(type="button" onclick="addTrade()") Submit
-        button#btnSubmit.btn.btn-light(type="button" onclick="getHistory()") History
+          label.mb-2.mr-sm-2(for="amount") Token Amount
+          input#amount.form-control.mb-2.mr-sm-2(type="number" name="amount")
+        button#btnSubmit.btn.btn-primary.mb-2.mr-sm-2(type="button" onclick="addTrade()") Create
+        button.btn.btn-secondary.mb-2.mr-sm-2(type="button" data-toggle="modal" data-target="#importModal") Import
   .row
-    .col-md-6.offset-3 
-block list
-  .row
-    .col-md-12
+    .col-md-6.offset-3
       h4.card-title List
       table.table.table-hover
         thead
@@ -37,6 +27,24 @@ block list
             td Amount
             td Status
             td Option
-        tbody#historyList
-
-
+        tbody#historyList 
+    .modal.fade#importModal(tabindex="-1" aria-labelledby="importModalLabel" aria-hidden="true")
+      .modal-dialog.modal-dialog-centered
+        .modal-content
+          .modal-header
+            h5#importModalLabel.modal-title Import Trade
+            button.close(type="button" data-dismiss="modal" aria-label="Close")
+              span(aria-hidden="true") &times;
+          .modal-body
+            form.form
+              .form-group
+                label.col-form-label(for="trade_id") Trade No.
+                input#trade_id.form-control(type="number")
+          .modal-footer
+            button.btn.btn-secondary(type="button" data-dismiss="modal") Close
+            button.btn.btn-primary(type="button" onclick="getTrade()") Import
+block script
+  script(type='text/javascript').
+    function refreshList(){
+      getHistory(2);
+    }

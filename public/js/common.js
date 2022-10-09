@@ -28,7 +28,7 @@ async function getAccount(accounts) {
     });
     //获取ESB余额
     getBalance();
-    getHistory();
+    refreshList();
 }
 getAccount();
 ethereum.on('accountsChanged', (accounts) => {
@@ -39,6 +39,7 @@ ethereum.on('chainChanged', (chainName) => {
 });
 
 const abiTrustpay = [
+    "function tradeCounter() view returns (uint256)",
     "function addTrade(uint256 _amount)",
     "function getTrade(uint256 _id) view returns (address,address,uint256,uint8)",
     "function executeTrade(uint256 _id)",
@@ -46,6 +47,7 @@ const abiTrustpay = [
     "function withdrawTrade(uint256 _id,uint _verify)",
     "event TradeStatusChange(address indexed creator,address indexed payer,uint256 id,uint256 amount,uint8 status)",
     "event AddTrade(uint256 id,uint256 amount,uint8 status)"
+
 ];
 const abiERC20 = [
     "function name() view returns (string)",
@@ -57,8 +59,8 @@ const abiERC20 = [
     "event Approval(address indexed owner, address indexed spender, uint256 value)",
     "event Transfer(address indexed from, address indexed to, uint256 value)"
 ];
-const address_trustpay = "0xe9f5200A3B9776Ddbc623Db80aaf313705525ee0";
-const address_token = "0x5D2aB2759bD686255A1DE02A6ffe1C5F8dD03Ac4";
+const address_trustpay = "0x0B29AdBB76d8C21e12a55c5c293270bD653086f2";
+const address_token = "0xbeEf4e5ad55d19526E7f99c56E59C9355E59e328";
 
 function listenTradeStatusChange(contract_smartpay, account_address) {
     let filter = contract_smartpay.filters.TradeStatusChange(account_address, null);
@@ -71,7 +73,8 @@ function listenTradeStatusChange(contract_smartpay, account_address) {
             "status": status
         };
         updateTrade(trade, (status) => {
-            getHistory();
+            refreshList();
+            $("#btnSubmit").text("Create");
         });
     });
 }
@@ -140,46 +143,60 @@ function mint() {
         console.log(error);
     }
 }
-function getHistory() {
+async function trades() {
+    try {
+        const signer = this.provider.getSigner();
+        const contract_smartpay = new ethers.Contract(address_trustpay, abiTrustpay, signer);
+        let tradeCount = await contract_smartpay.tradeCounter();
+        console.log(ethers.BigNumber.from(tradeCount).toString());
+    } catch (error) {
+        console.log(error);
+    }
+}
+function getHistory(status) {
+    status = typeof status=="undefined"?3:status;
     list = JSON.parse(localStorage.getItem(account));
-    console.log(list);
     $("#historyList").empty();
 
     if (list == null) return;
     for (let index = list.length - 1; index >= 0; index--) {
-        const trade = list[index];
-        var statusHTML = "";
-        switch (trade.status) {
-            case 1:
-                statusHTML = '<label class="badge badge-warning">Pending</label>';
-                break;
-            case 2:
-                statusHTML = '<label class="badge badge-success">Payed</label>';
-                break;
-            case 3:
-                statusHTML = '<label class="badge badge-info">Withdrawed</label>';
-                break;
 
-            default:
-                statusHTML = "";
-                break;
+        const trade = list[index];
+        if (status >= trade.status) {
+            let statusHTML = "";
+            switch (trade.status) {
+                case 1:
+                    statusHTML = '<label class="badge badge-warning">Pending</label>';
+                    break;
+                case 2:
+                    statusHTML = '<label class="badge badge-success">Payed</label>';
+                    break;
+                case 3:
+                    statusHTML = '<label class="badge badge-info">Withdrawed</label>';
+                    break;
+
+                default:
+                    statusHTML = "";
+                    break;
+            }
+            let amountString = ethers.utils.formatUnits(ethers.BigNumber.from(trade.amount), 6);
+            let htmlList = `<tr><td><a href="#" onclick='updateTradeStatus(${trade.id})'>${trade.id}</a></td>
+            <td>${mask(trade.creator)}</td>
+            <td>${mask(trade.payer)}</td>
+            <td>${amountString}</td>
+            <td>${statusHTML}</td>`;
+            if (trade.creator.toString().toLowerCase() == account.toString().toLowerCase() && trade.status == 2) {
+                htmlList += `<td><a href='#' onclick='Withdraw(${trade.id})'>Withdraw</a></td></tr>`;
+            } else if (trade.payer.toString().toLowerCase() == account.toString().toLowerCase() && trade.status == 2) {
+                htmlList += `<td><a href='#' onclick='getVerifyCode(${trade.id})'>VerifyCode</a></td></tr>`;
+            } else if (trade.creator.toString().toLowerCase() != account.toString().toLowerCase() && trade.status == 1) {
+                htmlList += `<td><a href='#' onclick='Pay(${trade.id},${trade.amount})'>Pay</a></td></tr>`;
+            } else {
+                htmlList += `<td></td></tr>`;
+            }
+            $("#historyList").append(htmlList);
         }
-        let amountString = ethers.utils.formatUnits(ethers.BigNumber.from(trade.amount), 6);
-        let htmlList = `<tr><td><a href="#" onclick='updateTradeStatus(${trade.id})'>${trade.id}</a></td>
-        <td>${mask(trade.creator)}</td>
-        <td>${mask(trade.payer)}</td>
-        <td>${amountString}</td>
-        <td>${statusHTML}</td>`;
-        if (trade.creator.toString().toLowerCase() == account.toString().toLowerCase() && trade.status == 2) {
-            htmlList += `<td><a href='#' onclick='Withdraw(${trade.id})'>Withdraw</a></td></tr>`;
-        } else if (trade.payer.toString().toLowerCase() == account.toString().toLowerCase() && trade.status == 2) {
-            htmlList += `<td><a href='#' onclick='getVerifyCode(${trade.id})'>VerifyCode</a></td></tr>`;
-        } else if (trade.creator.toString().toLowerCase() != account.toString().toLowerCase() && trade.status == 1) {
-            htmlList += `<td><a href='#' onclick='Pay(${trade.id},${trade.amount})'>Pay</a></td></tr>`;
-        } else {
-            htmlList += `<td></td></tr>`;
-        }
-        $("#historyList").append(htmlList);
+
     }
 }
 
@@ -199,9 +216,8 @@ async function getTrade() {
             return;
         }
         updateTrade(trade, (status) => {
-            getHistory();
-            $("#amount").val(ethers.utils.formatUnits(ethers.BigNumber.from(trade.amount), 6));
-            $("#receiver").val(trade.creator);
+            refreshList();
+            $('#importModal').modal('toggle');
         });
     } catch (error) {
         console.log(error);
@@ -229,7 +245,6 @@ function Withdraw(trade_id) {
     try {
         var verifyCode = prompt("VerifyCode");
         if (verifyCode) {
-
             const signer = this.provider.getSigner();
             const contract_token = new ethers.Contract(address_token, abiERC20, signer);
             const contract_smartpay = new ethers.Contract(address_trustpay, abiTrustpay, signer);
@@ -262,9 +277,9 @@ async function updateTradeStatus(trade_id) {
         };
         console.log(trade);
         updateTrade(trade, (status) => {
-            getHistory();
+            refreshList();
         });
     } catch (error) {
-
+        console.log(error);
     }
 }

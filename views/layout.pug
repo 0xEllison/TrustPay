@@ -10,7 +10,7 @@ html
     nav.navbar.navbar-light.bg-light
       a(class='navbar-brand' href="#")=title
       form.form-inline   
-        button(id='network' type='button' class='form-control mr-sm-2 btn btn-secondary') network
+        button(id='network' type='button' onclick='trades()' class='form-control mr-sm-2 btn btn-secondary') network
         button(id='address' type='button' class='form-control mr-sm-2 btn btn-light') connect
         button(id='balance' type='button' class='form-control mr-sm-2 btn btn-light') 0
         //- button(type='button' class='form-control mr-sm-2 btn btn-light')
@@ -23,10 +23,8 @@ html
         .col-md-12
           block nav
       .row
-        .col-md-4
+        .col-md-12
           block content
-        .col-md-8
-          block list
 
   script(src="/js/jquery-3.6.1.min.js")
   script(src="/js/bootstrap.min.js")
@@ -34,3 +32,4 @@ html
     charset="utf-8"
     type="text/javascript") 
   script(src="/js/common.js") 
+  block script

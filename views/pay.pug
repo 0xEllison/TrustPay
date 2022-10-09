@@ -2,22 +2,22 @@ extends layout
 
 block nav
   ul#nav-main.nav.justify-content-center.nav-pills
-            li.nav-item
-              a(class='nav-link' href='/') Create
-            li.nav-item
-              a(class='nav-link active' href='#') Pay
-            li.nav-item
-              a(class='nav-link' href='#') Setting
+    li.nav-item
+      a(class='nav-link' href='/') Create
+    li.nav-item
+      a(class='nav-link active' href='#') Pay
+    li.nav-item
+      a(class='nav-link' href='history') History
 block content
   .row
-    .col-md-12
+    .col-md-6.offset-3
       form.form
         .form-group
           label(for="trade_id") Trade No.
             .input-group
-                input#trade_id.form-control(type="number")
-                .input-group-append
-                    button#btn-get.btn.btn-primary(type='button' onclick="getTrade()") Get
+              input#trade_id.form-control(type="number")
+              .input-group-append
+                button#btn-get.btn.btn-primary(type='button' onclick="getTrade()") Get
         .form-group 
           label(for="amount") Amount
           input#amount.form-control(type="text" readonly)
@@ -26,9 +26,8 @@ block content
           input#receiver.form-control(type="text" readonly)
         button.btn.btn-primary(type="button") Pay
         button#btnSubmit.btn.btn-light(type="button" onclick="getHistory()") History
-block list
   .row
-    .col-md-12
+    .col-md-6.offset-3
       h4.card-title List
       table.table.table-hover
         thead
